@@ -226,4 +226,4 @@ void rasterize(const vec<2> screen[3], vec<3> z, vec<3> uvs[3], double ambient, 
         }
     }
 }
-}
+}Commit on 2026-06-02T12:00:00
