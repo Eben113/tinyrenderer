@@ -182,4 +182,4 @@ void Model::draw(TGAImage& frameBuffer, std::vector<double>& zBuffer){
 void Model::write(std::string filename){
     this->modelBuffer.write_tga_file(filename);
     return;
-}
+}Commit on 2026-06-18T12:00:00
