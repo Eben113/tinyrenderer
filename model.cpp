@@ -183,3 +183,4 @@ void Model::write(std::string filename){
     this->modelBuffer.write_tga_file(filename);
     return;
 }Commit on 2026-06-18T12:00:00
+Commit on 2026-06-19T12:00:00
