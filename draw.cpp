@@ -76,16 +76,20 @@ void triangle(int x1, int x2, int x3, int y1, int y2, int y3, TGAImage &framebuf
 
     line(x[0], y[0], x[1], y[1], framebuffer, color, false, &line1);
     line(x[1], y[1], x[2], y[2], framebuffer, color, false, &line2);
+    bool asc1 = true, asc2 = true;
+
+    if(line1[line1.size()-1]<line1[0]){asc1 = false;}
+    if(line2[line2.size()-1]<line2[0]){asc2 = false;}
+
     std::cout << line1.size() << "  " << line2.size() << "\n";
     
-    int i = 0;
+    int i = 0, a, b;
     std::array<int,2> p1;
     std::array<int,2> p2;
     
     while((i<line1.size()) || (i<line2.size())){
-
-        if(i<line1.size()){p1 = line1[line1.size()-i-1];}
-        if(i<line2.size()){p2 = line2[line2.size()-i-1];}
+        if(i<line1.size()){p1 = asc1? line1[line1.size()-i-1]: line1[i];}
+        if(i<line2.size()){p2 = asc2? line2[i] : line2[line2.size()-i-1];}
         std::cout << p1[0] << "  " << p1[1] << "  " << p2[0] << "  " << p2[1] << "\n";
         line(p1[0], p1[1], p2[0], p2[1], framebuffer, color);
         i++;
