@@ -13,14 +13,11 @@ constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
 int main(int argc, char** argv) {
     
-    TGAImage framebuffer = TGAImage(300, 300, TGAImage::RGB);
-    draw::line(30, 30, 60, 60, framebuffer, blue);
-    draw::triangle(30, 45, 100, 100, 120,  60, framebuffer, red);
+    TGAImage framebuffer(200, 200, TGAImage::RGB);
+    draw::triangle(  7, 45, 35, 100, 45,  60, framebuffer, red);
+    draw::triangle(120, 35, 90,   5, 45, 110, framebuffer, white);
+    draw::triangle(115, 83, 80,  90, 85, 120, framebuffer, green);
 
-    framebuffer.set(30, 100, white);
-    framebuffer.set(45, 120, white);
-    framebuffer.set(100, 60, white);
-
-    framebuffer.write_tga_file("triangle.tga");
+    framebuffer.write_tga_file("framebuffer.tga");
     return 0;
 }
