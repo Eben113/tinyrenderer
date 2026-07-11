@@ -63,30 +63,23 @@ void line(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color,
 }
 
 int triangleArea(int x0, int y0, int x1, int y1, int x2, int y2){
-    return   ((y2 - y1)*(x0 - x1)) - ((y0 - y1)*(x2 - x1));
+    return   ((x1-x0)*(y2-y0)) - ((y1-y0)*(x2-x0));
 }
 
 void triangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, TGAColor color){
-    if(triangleArea(x1, y1, x0, y0, x2, y2) < 0){
-        std::swap(x1, x2); std::swap(y1, y2);}
-    
-    int maxX = x0, minX = x0, maxY = y0, minY = y0;
-    if(x1 > x0){maxX = x1;}
-    else{minX = x1;}
-    if(x2 > maxX){maxX = x2;}
-    else if(x2 < minX){minX = x2;}
-
-    if(y1 > y0){maxY = y1;}
-    else{minY = y1;}
-    if(y2 > maxY){maxY = y2;}
-    else if(y2 < minY){minY = y2;}
+    int totalArea = triangleArea(x0, y0, x1, y1, x2, y2);
+    if(triangleArea(x0, y0, x1, y1, x2, y2) <= 1){
+        return;}
+    int orientation = (totalArea < 0)? -1: 1;
+    int maxX = std::max(std::max(x0, x1), x2), minX = std::min(std::min(x0, x1), x2);
+    int maxY = std::max(std::max(y0, y1), y2), minY = std::min(std::min(y0, y1), y2);
 
     int alpha, beta, gamma;
-    for(int i = minX; i<=maxX; i++){
+    for(int i = minX; i<=maxX; i++){ 
         for(int j = minY; j<=maxY; j++){
-            alpha = triangleArea(x0, y0, i, j, x1, y1);
-            beta = triangleArea(x1, y1, i, j, x2, y2);
-            gamma = triangleArea(x2, y2, i, j, x0, y0);
+            alpha = triangleArea(i, j, x1, y1, x2, y2)*orientation;
+            beta = triangleArea(x0, y0, i, j, x2, y2)*orientation;
+            gamma = triangleArea(x0, y0, x1, y1, i, j)*orientation;
 
             if((alpha > 0) && (beta > 0) && (gamma > 0)){
                 framebuffer.set(i, j, color);
@@ -95,4 +88,59 @@ void triangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuf
     }
 }
 
+void gradientTriangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer){
+    double totalArea = triangleArea(x0, y0, x1, y1, x2, y2);
+    int orientation = (totalArea < 0)? -1: 1;
+    
+    int maxX = std::max(std::max(x0, x1), x2), minX = std::min(std::min(x0, x1), x2);
+    int maxY = std::max(std::max(y0, y1), y2), minY = std::min(std::min(y0, y1), y2);
+
+    int alpha, beta, gamma;
+    for(int i = minX; i<=maxX; i++){ 
+        for(int j = minY; j<=maxY; j++){
+            alpha = triangleArea(i, j, x1, y1, x2, y2)*orientation;
+            beta = triangleArea(x0, y0, i, j, x2, y2)*orientation;
+            gamma = triangleArea(x0, y0, x1, y1, i, j)*orientation;
+
+            uint8_t red = (alpha/abs(totalArea))*255, blue = (beta/abs(totalArea))*255, green = (gamma/abs(totalArea))*255;
+            if((alpha > 0) && (beta > 0) && (gamma > 0)){
+                TGAColor color {red, blue, green, 255};
+                framebuffer.set(i, j, color);
+            }
+        }
+    }
+}
+
+
+void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, int thickness){
+    double a01 = std::sqrt(std::pow((y1-y0),2) + std::pow((x1-x0),2))*thickness;
+    double a02 = std::sqrt(std::pow((y2-y0),2) + std::pow((x2-x0),2))*thickness;
+    double a12 = std::sqrt(std::pow((y2-y1),2) + std::pow((x2-x1),2))*thickness;
+
+
+    std::cout << a01 << "  " << a02 << "  " << a12 << "\n";
+    double totalArea = triangleArea(x0, y0, x1, y1, x2, y2);
+    int orientation = (totalArea < 0)? -1: 1;
+    
+    int maxX = std::max(std::max(x0, x1), x2), minX = std::min(std::min(x0, x1), x2);
+    int maxY = std::max(std::max(y0, y1), y2), minY = std::min(std::min(y0, y1), y2);
+
+    int alpha, beta, gamma;
+    for(int i = minX; i<=maxX; i++){ 
+        for(int j = minY; j<=maxY; j++){
+            alpha = triangleArea(i, j, x1, y1, x2, y2)*orientation;
+            beta = triangleArea(x0, y0, i, j, x2, y2)*orientation;
+            gamma = triangleArea(x0, y0, x1, y1, i, j)*orientation;
+
+            uint8_t red = (alpha/abs(totalArea))*255, blue = (beta/abs(totalArea))*255, green = (gamma/abs(totalArea))*255;
+            
+            if((alpha > 0) && (beta > 0) && (gamma > 0)){
+                if(alpha<=a12 || beta<=a02 || gamma<=a01){
+                    TGAColor color {red, blue, green, 255};
+                    framebuffer.set(i, j, color);
+                }
+            }
+        }
+    }
+}
 }
