@@ -143,4 +143,29 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
         }
     }
 }
+
+void depthTriangle(int x0, int y0, int z0, int x1, int y1, int z1, int x2, int y2, int z2, TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer){
+    int totalArea = triangleArea(x0, y0, x1, y1, x2, y2);
+    if(totalArea <= 0){
+        return;}
+    int orientation = (totalArea < 0)? -1: 1;
+    int maxX = std::max(std::max(x0, x1), x2), minX = std::min(std::min(x0, x1), x2);
+    int maxY = std::max(std::max(y0, y1), y2), minY = std::min(std::min(y0, y1), y2);
+    double alpha, beta, gamma;
+    for(int i = minX; i<=maxX; i++){ 
+        for(int j = minY; j<=maxY; j++){
+            alpha = triangleArea(i, j, x1, y1, x2, y2)*orientation;
+            beta = triangleArea(x0, y0, i, j, x2, y2)*orientation;
+            gamma = triangleArea(x0, y0, x1, y1, i, j)*orientation;
+
+            if((alpha >= 0) && (beta >= 0) && (gamma >= 0)){
+                uint8_t depthColor = ((alpha/totalArea)*z0 + (beta/totalArea)*z1 + (gamma/totalArea)*z2)*1.275;
+                if((int)grayBuffer.get(i,j).bgra[0] <= depthColor){
+                    grayBuffer.set(i, j, {depthColor, depthColor, depthColor});
+                    framebuffer.set(i, j, color);
+            }
+        }
+        }
+    }
+}
 }

@@ -12,6 +12,7 @@ TGAImage tmp = TGAImage();
 
 Model::Model(std::string filename, TGAColor color, int width, int height){
     this->modelBuffer = TGAImage{width, height, TGAImage::RGB};
+    TGAImage  grayBuffer = TGAImage{width, height, TGAImage::RGB};
     
     std::ifstream inf{filename};
     std::string line;
@@ -20,12 +21,13 @@ Model::Model(std::string filename, TGAColor color, int width, int height){
     std::vector<int> point{0,0,0};
     int ind{};
     int points[3], val;
+
     while(inf >> line){
         if(line == "v"){
             float coord;
             for(int i = 0; i<3; i++){
                 inf >> coord;
-                coord = (coord+1.0)*((i==0) ?width/2 : height/2);
+                coord = (coord+1.0)*((i==0) ?width/2 :(i==1)? height/2: 100);
                 point[i] = coord;
             }
             vertices.push_back(point);
@@ -40,13 +42,14 @@ Model::Model(std::string filename, TGAColor color, int width, int height){
                 inf >> discard;
             }
             auto p1 = vertices[points[0]], p2 = vertices[points[1]], p3 = vertices[points[2]];
-
+            ind++;
             TGAColor rnd;
             for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
-            draw::triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], this->modelBuffer, rnd);
+            draw::depthTriangle(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], rnd, this->modelBuffer, grayBuffer);
         }
     }
     inf.close();
+    grayBuffer.write_tga_file("graybuff.tga");
 }
 
 

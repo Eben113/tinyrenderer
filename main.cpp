@@ -12,7 +12,7 @@ constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
 
 int main(int argc, char** argv) {
-    TGAImage framebuffer = TGAImage{300, 300, TGAImage::RGB};
+    TGAImage framebuffer = TGAImage{600, 600, TGAImage::RGB};
     Model face{"obj/diablo3_pose/diablo3_pose.obj", red, 600, 600};
 
     face.write("framebuffer1.tga");
