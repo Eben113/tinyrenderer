@@ -10,37 +10,7 @@ constexpr TGAColor blue    = {255, 128,  64, 255};
 constexpr TGAColor yellow  = {  0, 200, 255, 255};
 
 
-void nline(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color){
-    if(ay == by){
-        if(ax > bx){std::swap(ax,bx);}
-        for(int x = ax; x<=bx; x++){framebuffer.set(x, ay, color);}
-        return;
-    }
-    bool steep = false;
-    int dy = abs(by - ay), dx = abs(bx - ax);
 
-    if(dy > dx){
-        steep = true;
-        std::swap(ax, ay);
-        std::swap(bx, by);
-        std::swap(dx, dy);
-    }
-
-    if(ax > bx){
-        std::swap(ax, bx);
-        std::swap(ay, by);
-    }
-    int step = by<ay?-1:1;
-
-    int E = 0, y = ay;
-    for(int x = ax; x <= bx; x++){
-            if(steep){framebuffer.set(y, x, color);}
-            else{framebuffer.set(x, y, color);}
-
-            E += 2*dy -  2*dx*(E>0);
-            y += step*(E>0);
-        }
-}
 void line(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color, bool draw_, std::vector<std::array<int,2>>* points){
     if(ay == by){
         if(ax > bx){std::swap(ax,bx);}
