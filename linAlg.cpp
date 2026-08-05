@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cassert>
-#include "vec.h"
+#include "linAlg.h"
 
 
 

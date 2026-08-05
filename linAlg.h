@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cassert>
+#include <vector>
 
 template<int n> struct vec{
     double data[n] = {0};
@@ -78,51 +79,98 @@ struct vec<4>{
 };
 
 
-template<int n> 
- struct squareMatrix {
-    vec<n> data[n] = {vec<n>{}};
-    squareMatrix<n>& squareMatrix<n>::operator+=(const squareMatrix<n> a){
+template<int n, int m> 
+ struct Matrix {
+    vec<m> data[n] = {{}};
+    Matrix<n, m>& Matrix<n, m>::operator+=(const Matrix<n, m> a){
         for(int i=0; i<n; i++){data[i]+=a.data[i];}
         return *this;}
 
-    squareMatrix<n> squareMatrix<n>::operator-() const{
-        squareMatrix result;
+    Matrix<n, m> Matrix<n, m>::operator-() const{
+        Matrix<n,m> result;
         for(int i=0; i<n; i++){result[i] = -data[i];}
         return result;}
     
+        Matrix<n,m> Matrix<n,m>::operator/(const double a){
+            Matrix<n,m> result;
+            for(int i = 0; i< n; i++){
+                for(int j = 0; j<m; j++){
+                    result[i][j] = data[i][j]/a;
+                }
+            }
+            return result;
+        }
     vec<n>& operator[](const int i){assert(i>=0 && i<n); return data[i]};
     vec<n> operator[](const int i) const{assert(i>=0 && i<n); return data[i]};
 
-    squareMatrix<n> squareMatrix<n>::T(0 const{
-        squareMatrix result;
+    Matrix<n, m> Matrix<n, m>::T() const{
+        Matrix<m, n> result;
         for(int i = 0; i<n; i++){
-            for(int j = 0; j<n; j++)
+            for(int j = 0; j<m; j++)
             result[i][j] = data[j][i];
         }
-    })
-    squareMatrix<n> squareMatrix<n>::operator*(squareMatrix<n> b){
-        squareMatrix result{};
-        squarematrix T = b.T()
-        for(int i = 0; i< n; i++){
-            for(int j = 0; j< n;  j++){
-                result[i][j] = this->data[i].dot(T[j]);
+    }
+
+
+    double det() const{
+        return dt<n>::det(*this)
+    }
+
+    double cofactor(const int row, const int col)const{
+        Matrix<n-1, m-1> subMatrix;
+        for(int i = 0; i<n-1; i++){
+            for(int j = 0; j<n-1; j++){
+                subMatrix[i][j] = data[i+(i>=row)][j+(j>=col)]
             }
+        }
+        return subMatrix.det() * (((row+col)%2 == 0)? 1 : -1)
+    }
+
+    Matrix<n, m> transposeInverse()const{
+        Matrix<n, m> result;
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j< m; j++){
+                result[i][j] = cofactor(i, j);
+            }
+        }
+        return result/(data[0].dot(result[0]))
+    }  
+
+    Matrix<n,m> inverse() const{
+        return transposeInverse().T();
+    }
+};
+
+template<int p, int n, int m>
+    Matrix<n, p> operator*(Matrix<n,m>& a, Matrix<m, p>& b){
+        Matrix<n, p> result{};
+        for(int i = 0; i< n; i++){
+            for(int j = 0; j< p;  j++){
+                for(int k = p; k--;  result[i][j] += a[i][k]*b[k][p]);
+            }
+        }
+        return result;
+    };
+
+
+template<int n, int m> vec<m> operator*(vec<n>& lhs, Matrix<n, m>&rhs){
+    return (Matrix<1, m>{{lhs}}*rhs)[0];
+};
+
+template<int n, int m> vec<n> operator*(Matrix<n,m>&lhs, vec<m>rhs){
+    return rhs*lhs.T();
+};
+
+template<int dim> struct dt{
+    static double det(const Matrix<dim, dim>&  mat){
+        double result;
+        for(int i = 0; i < n; i++){
+            result += mat.cofactor(0,i)*mat[0][i];
         }
         return result;
     }
 };
 
-template<>
-struct squareMatrix<3>{
-    squareMatrix<3>(vec<3> a, vec<3> b, vec<3> c){
-        data[0] = a;
-        data[1] = b;
-        data[2] = c;
-    };
-
-    int squareMatrix<3>::coFactor(int x, int y){
-        int xa = (x+1)%3, xb = (x+2)%3, ya = (y+1)%3, yb = (y+2)%3;
-    }
-}
-
-
+template<> struct dt<1>{
+    static double det(const Matrix<1,1>& mat){return mat[0][0];}
+};
