@@ -1,3 +1,6 @@
+#ifndef MODEL
+#define MODEL
+
 #include <string>
 #include "tgaimage.h"
 #include <vector>
@@ -13,5 +16,7 @@ class Model{
     private:
         TGAImage modelBuffer;
         std::vector<vec<3>> vertices;
-        std::vector<vec<3>> points;
+        std::vector<std::vector<int>> points;
 };
+
+#endif
