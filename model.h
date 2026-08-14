@@ -11,7 +11,7 @@ class Model{
     public:
         Model(std::string filename, int width, int height);
         void write(std::string filename);
-        void draw(TGAColor color, int width, int height, float thetaX, float thetaY, float thetaZ);
+        void draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height);
 
     private:
         TGAImage modelBuffer;
@@ -19,4 +19,7 @@ class Model{
         std::vector<std::vector<int>> points;
 };
 
+Matrix<4,4> lookAt(const vec<3> c, const vec<3> eye, vec<3> up);
+Matrix<4,4> perspective(const double f);
+Matrix<4,4> viewport(int x, int y, int w, int h);
 #endif

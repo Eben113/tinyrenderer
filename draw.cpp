@@ -64,14 +64,14 @@ void line(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color,
 
 }
 
-int triangleArea(vec<2> p0, vec<2> p1, vec<3> p2){
+int triangleArea(vec<2> p0, vec<2> p1, vec<2> p2){
     return   ((p1.x-p0.x)*(p2.y-p0.y)) - ((p1.y-p0.y)*(p2.x-p0.x));
 }
 int triangleArea(int x0, int y0, int x1, int y1, int x2, int y2){
     return   ((x1-x0)*(y2-y0)) - ((y1-y0)*(x2-x0));
 }
 
-void triangle(vec<2> p0, vec<2> p1, vec<3> p2, TGAImage &framebuffer, TGAColor color){
+void triangle(vec<2> p0, vec<2> p1, vec<2> p2, TGAImage &framebuffer, TGAColor color){
     int totalArea = triangleArea(p0, p1,  p2);
     if(triangleArea(p0, p1, p2) <= 1){
         return;}
@@ -152,23 +152,24 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
 
 void depthTriangle(const vec<3> vertices[3], TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer){
     Matrix<3,3> ABC = {{vertices[0], vertices[1], vertices[2]}};
-    ABC = ABC.T();
     vec<2> screen[3] = {{ABC[0].x, ABC[1].x}, {ABC[0].y, ABC[1].y}, {ABC[0].z, ABC[1].z}};
+
+    vec<3> z = {ABC[0].z,ABC[1].z,ABC[2].z};
+
+    for(int i= 0; i<3; ++i){ABC[i].z = 1;}
+
     int totalArea = triangleArea(screen[0], screen[1], screen[2]);
     if(totalArea <= 0){
         return;}
     int orientation = (totalArea < 0)? -1: 1;
-    int maxX = std::max(std::max(x0, x1), x2), minX = std::min(std::min(x0, x1), x2);
-    int maxY = std::max(std::max(y0, y1), y2), minY = std::min(std::min(y0, y1), y2);
+    int maxX = std::max(std::max(screen[0].x, screen[1].x), screen[2].x), minX = std::min(std::min(screen[0].x, screen[1].x), screen[2].x);
+    int maxY = std::max(std::max(screen[0].y, screen[1].y), screen[2].y), minY = std::min(std::min(screen[0].y, screen[1].y), screen[2].y);
     double alpha, beta, gamma;
     for(int i = minX; i<=maxX; i++){ 
         for(int j = minY; j<=maxY; j++){
-            alpha = triangleArea(i, j, x1, y1, x2, y2)*orientation;
-            beta = triangleArea(x0, y0, i, j, x2, y2)*orientation;
-            gamma = triangleArea(x0, y0, x1, y1, i, j)*orientation;
-
-            if((alpha >= 0) && (beta >= 0) && (gamma >= 0)){
-                uint8_t depthColor = ((alpha/totalArea)*z0 + (beta/totalArea)*z1 + (gamma/totalArea)*z2)*1.275;
+            vec<3> bc = ABC.transposeInverse()*vec<3>{(double)i, (double)j, 1.0};
+            if((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)){
+                uint8_t depthColor = ((bc/totalArea).dot(z))*1.275;
                 if((int)grayBuffer.get(i,j).bgra[0] <= depthColor){
                     grayBuffer.set(i, j, {depthColor, depthColor, depthColor});
                     framebuffer.set(i, j, color);

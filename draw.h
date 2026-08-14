@@ -6,7 +6,7 @@ namespace draw{
     void triangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, TGAColor color);
     void gradientTriangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer);
     void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, int thickness);
-    void depthTriangle(int x0, int y0, int z0, int x1, int y1, int z1, int x2, int y2, int z2, TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer);
+    void depthTriangle(const vec<3> vertices[3], TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer);
     void nline(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color);
 
 }

@@ -13,7 +13,7 @@ constexpr TGAColor yellow  = {  0, 200, 255, 255};
 TGAImage tmp = TGAImage();
 const double pi = std::acos(-1);
 
-Matrix<4,4> viewport(vec<4>& point, int x, int y, int w, int h){
+Matrix<4,4> viewport(int x, int y, int w, int h){
     Matrix<4,4> vPort = {{{w/2,0,0,x+w/2}, {0,h/2,0,y+h/2}, {0,0,1,0}, {0,0,0,0}}};
     return vPort;
 }
@@ -29,14 +29,6 @@ Matrix<4,4> lookAt(const vec<3> c, const vec<3> eye, vec<3> up){
     return Matrix<4,4>{{{l.x, m.x, n.x, 0}, {l.y, m.y, n.y, 0}, {l.z, m.z, n.z, 0}, {0,0,0,1}}}* Matrix<4,4>{{{1,0,0,-c.x}, {0,1,0,-c.y}, {0,0,1,-c.z}, {0,0,0,1}}};
 }
 
-void persp(vec<3>& point, double c){
-    point = point/(1 - (point.z)/c);
-}
-void project(vec<3>& point, int width, int height){
-    for(int i = 0; i<2; ++i){point[i] = (point[i]+1)*((i==0)?(width/2):(height/2));}
-    point[2] = std::min((point[2]+1)*127.5, 255.0);
-    if(point[2]>=254){std::cout <<  point << "\n";}
-}
 
 Model::Model(std::string filename, int width, int height){
     std::ifstream inf{filename};
@@ -57,12 +49,6 @@ Model::Model(std::string filename, int width, int height){
                 inf >> coord;
                 point[i] = coord;
             }
-            //std::cout << "raw: " << point;
-            point = rotate*point;
-            //std::cout << "\nrotated: " << rotate[0].dot(point);
-            persp(point, 3);
-            project(point, width, height);
-            //std::cout << "\nprojected: " << point << "\n\n\n\n";
             vertices.push_back(point);
         }
 
@@ -80,17 +66,23 @@ Model::Model(std::string filename, int width, int height){
     inf.close();
 }
 
-void Model::draw(TGAColor color, int width, int height, float thetaX, float thetaY, float thetaZ){
+void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height){
     modelBuffer = TGAImage{width, height, TGAImage::RGB};
     TGAImage grayBuffer = TGAImage(width, height, TGAImage::GRAYSCALE);
-    int i = 0;
     for(auto set: points){
         std::cout << "\r";
-        auto p1 = vertices[set[0]], p2 = vertices[set[1]], p3 = vertices[set[2]];
+        vec<3> coords[3] = {vertices[set[0]], vertices[set[1]], vertices[set[2]]};
         TGAColor rnd;
         for (int c=0; c<3; c++){ rnd[c] = std::rand()%255;}
-        draw::depthTriangle(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2], rnd, this->modelBuffer, grayBuffer);
-        std::cout << i; ++i;
+        vec<4> clip[3];
+        for(int i = 0; i < 3; i++){
+            clip[i] = persp * modelView * vec<4>{coords[i].x, coords[i].y, coords[i].z, 1.};
+            clip[i] = vPort*(clip[i]/clip[i][3]);}
+        vec<3> args[3];
+        for(int i = 0; i< 3; ++i){
+            args[i] = vec<3>{clip[i][0], clip[i][1], clip[i][2]};
+        }
+        draw::depthTriangle(args, rnd, this->modelBuffer, grayBuffer);
     }
     grayBuffer.write_tga_file("grayBuff1.tga");
 }
