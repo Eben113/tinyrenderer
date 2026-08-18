@@ -9,24 +9,24 @@
 template<int n> struct vec{
     double data[n] = {0};
     vec& operator += (const vec a){
-        for(int i = 0; i<n; ++i){data[i]+=a.data[i]};
+        for(int i = 0; i<n; ++i){data[i]+=a.data[i];}
         return *this;
     }
     vec operator-(){
         vec<n> result;
-        for(int i = 0; i<n; ++i){result[i] = -data[i]};
+        for(int i = 0; i<n; ++i){result[i] = -data[i];}
         return result;
     }
 
     vec operator/(double d){
         vec<n> result;
-        for(int i = 0; i<n; ++i){result[i] = data[i]/d};
+        for(int i = 0; i<n; ++i){result[i] = data[i]/d;}
         return result;
     }
 
-    int mag(){
-        int result = 0;
-        for(double a: data){result += a*a};
+    double mag(){
+        double result = 0;
+        for(double a: data){result += a*a;}
         return std::sqrt(result);
     }
 
@@ -37,10 +37,11 @@ template<int n> struct vec{
     double dot(vec a){
         double result{};
         for(int i = 0; i<n; i++){result += data[i]*a.data[i];}
+        return result;
     };
 
-    double& operator[](const int i){assert(i>=0 && i<n); return data[i]};
-    double operator[](const int i) const{assert(i>=0 && i<n); return data[i]};
+    double& operator[](const int i){assert(i>=0 && i<n); return data[i];}
+    double operator[](const int i) const{assert(i>=0 && i<n); return data[i];}
 };
 
 template<int n>
@@ -81,7 +82,7 @@ struct vec<3>{
         x*=a.x; y*=a.y; z*=a.z;
         return *this;
     }
-    int mag(){
+    double mag(){
         return std::sqrt(this->dot(*this));
     }
 
@@ -116,16 +117,16 @@ inline vec<3> operator*(vec<3>& a, vec<3>& v){
 }
 
 
-template<>
-struct vec<2>{
-    double x = 0, y = 0;
-    vec<2>& operator +=(const vec<2> a);
-    vec<2>& operator -();
-    vec<2> operator*(double a) const;
-    vec<2>& dot(vec<2> a);
-    double& operator[](const int i);
-    double operator[](const int i)const;
-};
+// template<>
+// struct vec<2>{
+//     double x = 0, y = 0;
+//     vec<2>& operator +=(const vec<2> a);
+//     vec<2>& operator -();
+//     vec<2> operator*(double a) const;
+//     vec<2>& dot(vec<2> a);
+//     double& operator[](const int i);
+//     double operator[](const int i)const;
+// };
 
 // template<>
 // struct vec<4>{
@@ -171,8 +172,8 @@ template<int n, int m>
             for(int j = 0; j<m; j++)
             result[j][i] = data[i][j];
         }
+        return result;
     }
-
 
     double det() const{
         return dt<n>::det(*this);
@@ -195,7 +196,7 @@ template<int n, int m>
                 result[i][j] = cofactor(i, j);
             }
         }
-        return result/(data[0].dot(result[0]));
+        return result/(result[0].dot(data[0]));
     }  
 
     Matrix<n,m> inverse() const{
@@ -208,26 +209,31 @@ inline std::ostream& operator<<(std::ostream& out, Matrix<3, 3> m){
     return out;
 }
 template<int p, int n, int m>
-    Matrix<n, p> operator*(Matrix<n,m>& a, Matrix<m, p>& b){
+    Matrix<n, p> operator*(Matrix<n,m> a, Matrix<m, p> b){
         Matrix<n, p> result{};
         for(int i = 0; i< n; i++){
-            for(int j = 0; j< m;  j++){
-                for(int k = p; k--;  result[i][j] += a[i][k]*b[k][p]);
+            for(int j = 0; j< p;  j++){
+                for(int k = 0; k < m; k++)
+                {result[i][j] += a[i][k]*b[k][j];};
             }
         }
         return result;
     };
 
 
-template<int n, int m> vec<n> operator*(Matrix<n,m>&lhs, vec<m>rhs){
+template<int n, int m> vec<n> operator*(Matrix<n,m> lhs, vec<m>rhs){
     vec<n> result;
-    for(int i = 0; i < n; ++i){result[i] = lhs[i].dot(rhs);}
+    for(int i = 0; i < n; ++i){
+        for(int j = 0; j < m; ++j){
+            result[i] += lhs[i][j]*rhs[j];
+        }
+    }
     return result;
 };
 
 template<int dim> struct dt{
     static double det(const Matrix<dim, dim>&  mat){
-        double result;
+        double result{};
         for(int i = 0; i < dim; i++){
             result += mat.cofactor(0,i)*mat[0][i];
         }

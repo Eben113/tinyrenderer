@@ -65,7 +65,7 @@ void line(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color,
 }
 
 int triangleArea(vec<2> p0, vec<2> p1, vec<2> p2){
-    return   ((p1.x-p0.x)*(p2.y-p0.y)) - ((p1.y-p0.y)*(p2.x-p0.x));
+    return   ((p1[0]-p0[0])*(p2[1]-p0[1])) - ((p1[1]-p0[1])*(p2[0]-p0[0]));
 }
 int triangleArea(int x0, int y0, int x1, int y1, int x2, int y2){
     return   ((x1-x0)*(y2-y0)) - ((y1-y0)*(x2-x0));
@@ -76,8 +76,8 @@ void triangle(vec<2> p0, vec<2> p1, vec<2> p2, TGAImage &framebuffer, TGAColor c
     if(triangleArea(p0, p1, p2) <= 1){
         return;}
     int orientation = (totalArea < 0)? -1: 1;
-    int maxX = std::max(std::max(p0.x, p1.x), p2.x), minX = std::min(std::min(p0.x, p1.x), p2.x);
-    int maxY = std::max(std::max(p0.y, p1.y), p2.y), minY = std::min(std::min(p0.y, p1.y), p2.y);
+    int maxX = std::max(std::max(p0[0], p1[0]), p2[0]), minX = std::min(std::min(p0[0], p1[0]), p2[0]);
+    int maxY = std::max(std::max(p0[1], p1[1]), p2[1]), minY = std::min(std::min(p0[1], p1[1]), p2[1]);
 
     int alpha, beta, gamma;
     for(int i = minX; i<=maxX; i++){ 
@@ -150,24 +150,35 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
     }
 }
 
-void depthTriangle(const vec<3> vertices[3], TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer){
-    Matrix<3,3> ABC = {{vertices[0], vertices[1], vertices[2]}};
-    vec<2> screen[3] = {{ABC[0].x, ABC[1].x}, {ABC[0].y, ABC[1].y}, {ABC[0].z, ABC[1].z}};
-
-    vec<3> z = {ABC[0].z,ABC[1].z,ABC[2].z};
-
-    for(int i= 0; i<3; ++i){ABC[i].z = 1;}
-
+void rasterize(const vec<2> screen[3], vec<3> z, TGAColor color, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> sun, vec<3> viewer){
     int totalArea = triangleArea(screen[0], screen[1], screen[2]);
+    int orientation = (totalArea < 0)? -1: 1;
     if(totalArea <= 0){
         return;}
-    int orientation = (totalArea < 0)? -1: 1;
-    int maxX = std::max(std::max(screen[0].x, screen[1].x), screen[2].x), minX = std::min(std::min(screen[0].x, screen[1].x), screen[2].x);
-    int maxY = std::max(std::max(screen[0].y, screen[1].y), screen[2].y), minY = std::min(std::min(screen[0].y, screen[1].y), screen[2].y);
-    double alpha, beta, gamma;
+    Matrix<3,3> ABC {};
+
+    vec<3> n, r;
+    int diffuse, specular;
+    vec<3> p[3];
+    for(int i = 0; i<3; ++i){p[i] = vec<3>{screen[i][0], screen[i][1], z[i]};}
+    n = (((p[2] - p[1]).cross(p[0] - p[1])).normalized())*orientation;
+    diffuse = std::max(0, (int)(n.dot(sun)*255));
+    specular = std::max(0, (int)std::pow((2*n*(n.dot(sun)) - sun).dot(viewer)*255, 35));
+    
+    for(int i = 0; i<3; ++i){color[i] += diffuse + specular; color[i] = std::min(color[i], (uint8_t)255);}
+    for(int i = 0; i< 3; ++i){
+        ABC[i] = vec<3>{screen[i][0], screen[i][1], 1};
+    }
+    ABC = ABC.transposeInverse();
+    int maxX = std::max(std::max(screen[0][0], screen[1][0]), screen[2][0]), minX = std::min(std::min(screen[0][0], screen[1][0]), screen[2][0]);
+    int maxY = std::max(std::max(screen[0][1], screen[1][1]), screen[2][1]), minY = std::min(std::min(screen[0][1], screen[1][1]), screen[2][1]);
+    #pragma op parallel for
     for(int i = minX; i<=maxX; i++){ 
         for(int j = minY; j<=maxY; j++){
-            vec<3> bc = ABC.transposeInverse()*vec<3>{(double)i, (double)j, 1.0};
+            vec<2> p {(double)i, (double)j};
+            vec<3> bc = {triangleArea(screen[0], screen[1], p), triangleArea(p, screen[1], screen[2]),
+            triangleArea(screen[0], p, screen[2])};
+            
             if((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)){
                 uint8_t depthColor = ((bc/totalArea).dot(z))*1.275;
                 if((int)grayBuffer.get(i,j).bgra[0] <= depthColor){

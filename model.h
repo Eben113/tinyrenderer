@@ -11,7 +11,7 @@ class Model{
     public:
         Model(std::string filename, int width, int height);
         void write(std::string filename);
-        void draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height);
+        void draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height, uint8_t ambient, vec<3> sun, vec<3> viewer);
 
     private:
         TGAImage modelBuffer;
