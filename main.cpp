@@ -25,9 +25,9 @@ Matrix<4,4> vPort = viewport(width/16, height/16, width*7/8, height*7/8);
 int main(int argc, char** argv) {
     TGAImage framebuffer(width, height, TGAImage::RGB);
 
-    Model diablo{"obj/diablo3_pose/diablo3_pose.obj", width, height};
+    Model diablo{"obj/african_head/african_head.obj", width, height};
     auto start = std::chrono::steady_clock::now();
-    diablo.draw(persp, modelView, vPort, width, height, 80, {0,16,5}, viewer);
+    diablo.draw(persp, modelView, vPort, width, height, .3, {1,1,1}, viewer);
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "done in " << duration.count() << "\n";

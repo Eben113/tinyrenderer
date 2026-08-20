@@ -62,12 +62,17 @@ Model::Model(std::string filename, int width, int height){
     inf.close();
 }
 
-void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height, uint8_t ambient, vec<3> sun, vec<3> viewer){
+void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height, double ambient, vec<3> light, vec<3> viewer){
     modelBuffer = TGAImage{width, height, TGAImage::GRAYSCALE};
     TGAImage grayBuffer = TGAImage(width, height, TGAImage::GRAYSCALE);
     Matrix<4,4> comp = persp * modelView;
+
+    vec<4> temp = {light[0], light[1], light[2], 0.};
+    temp = modelView*temp;
+    light = {temp[0], temp[1], temp[2]};
+    light = light.normalized();
+
     int progress = 0;
-    TGAColor color = {ambient, ambient, ambient};
     for(auto set: points){
         vec<3> coords[3] = {vertices[set[0]], vertices[set[1]], vertices[set[2]]};
         TGAColor rnd;
@@ -84,7 +89,7 @@ void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, i
         for(int i = 0; i< 3; ++i){
             args[i] = vec<2>{clip[i][0], clip[i][1]};
         }
-        draw::rasterize(args, Z, color, modelBuffer, grayBuffer, sun, viewer);
+        draw::rasterize(args, Z, ambient, modelBuffer, grayBuffer, light, viewer);
     }
     grayBuffer.write_tga_file("grayBuff1.tga");
 }
