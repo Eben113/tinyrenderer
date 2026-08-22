@@ -153,6 +153,7 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
 void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> l, vec<3> viewer){
     int totalArea = triangleArea(screen[0], screen[1], screen[2]);
     int orientation = (totalArea < 0)? -1: 1;
+    int absArea = orientation*totalArea;
     if(totalArea <= 0){
         return;}
     Matrix<3,3> ABC {};
@@ -172,9 +173,11 @@ void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient
             vec<2> p {(double)i, (double)j};
             vec<3> bc = {triangleArea(screen[0], screen[1], p), triangleArea(p, screen[1], screen[2]),
             triangleArea(screen[0], p, screen[2])};
+            bc = (bc/totalArea);
             
             if((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)){
-                n = bc[0]*norms[0] + bc[1]*norms[1] + bc[2]*norms[2];
+                n = (bc[0]*norms[0] + bc[1]*norms[1] + bc[2]*norms[2]).normalized();
+                //std::cout << n;
                 r = (n*(n.dot(l)*2) - l).normalized();
                 diffuse = std::max(0., n.dot(l));
                 specular = std::pow(std::max(0., r.z), 35);
@@ -190,4 +193,5 @@ void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient
         }
         }
     }
+}
 }

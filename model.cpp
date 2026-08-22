@@ -63,14 +63,17 @@ Model::Model(std::string filename, int width, int height){
             for(int i = 0; i<3; i++){
                 inf >> val;
                 set[i] = val-1;
+                inf.seekg(1, std::ios::cur);
                 inf >> val;
+                inf.seekg(1, std::ios::cur);
                 inf >> val;
-                set1[i] = val;
+                set1[i] = val-1;
             }
             points.push_back(set);
             facePoints.push_back(set1);
         }
     }
+    std::cout << points.size() << "  " << facePoints.size();
     inf.close();
 }
 
@@ -92,7 +95,12 @@ void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, i
     for(int i = 0; i<points.size(); i++){
         std::vector<int> set = points[i], set1 = facePoints[i];
         for(int i:{0,1,2}){coords[i] = vertices[set[i]];}
-        for(int i:{0,1,2}){norms[i] = normals[set1[i]];}
+        for(int i:{0,1,2}){
+            temp = {normals[set[i]][0], normals[set[i]][1], normals[set[i]][2], 0};
+            temp = modelView*temp;
+            norms[i] = {temp[0], temp[1], temp[2]};
+            norms[i] = norms[i].normalized();}
+
         for(int i = 0; i < 3; i++){ 
             clip[i] = modelView * vec<4>{coords[i].x, coords[i].y, coords[i].z, 1.};
             norms[i] = {clip[i][0], clip[i][1], clip[i][2]};
