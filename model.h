@@ -16,7 +16,9 @@ class Model{
     private:
         TGAImage modelBuffer;
         std::vector<vec<3>> vertices;
+        std::vector<vec<3>> normals;
         std::vector<std::vector<int>> points;
+        std::vector<std::vector<int>> facePoints;
 };
 
 Matrix<4,4> lookAt(const vec<3> c, const vec<3> eye, vec<3> up);

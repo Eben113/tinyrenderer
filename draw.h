@@ -7,7 +7,7 @@ namespace draw{
     void triangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, TGAColor color);
     void gradientTriangle(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer);
     void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebuffer, int thickness);
-    void rasterize(const vec<2> screen[3], vec<3> z, double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> sun, vec<3> viewer);
+    void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> sun, vec<3> viewer);
     void nline(int ax, int ay, int bx, int by, TGAImage &framebuffer, TGAColor color);
 
 }

@@ -150,7 +150,7 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
     }
 }
 
-void rasterize(const vec<2> screen[3], vec<3> z, double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> l, vec<3> viewer){
+void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> l, vec<3> viewer){
     int totalArea = triangleArea(screen[0], screen[1], screen[2]);
     int orientation = (totalArea < 0)? -1: 1;
     if(totalArea <= 0){
@@ -159,19 +159,7 @@ void rasterize(const vec<2> screen[3], vec<3> z, double ambient, TGAImage &frame
 
     vec<3> n, r;
     double diffuse, specular;
-    vec<3> p[3];
-    for(int i = 0; i<3; ++i){p[i] = vec<3>{screen[i][0], screen[i][1], z[i]};}
-    TGAColor color {255, 255, 255, 255};
 
-    n = (((p[1] - p[0]).cross(p[2] - p[0])).normalized());
-    r = (n*(n.dot(l)*2) - l).normalized();
-    viewer = viewer.normalized();
-    diffuse = std::max(0., n.dot(l));
-    specular = std::pow(std::max(0., r.z), 10);
-
-    //std::cout << l << "  "  << n << r << "\n";
-    
-    for(int i : {0,1,2}){color[i] *= std::min(1., ambient + .4*diffuse + .9*specular);}
     for(int i = 0; i< 3; ++i){
         ABC[i] = vec<3>{screen[i][0], screen[i][1], 1};
     }
@@ -186,13 +174,20 @@ void rasterize(const vec<2> screen[3], vec<3> z, double ambient, TGAImage &frame
             triangleArea(screen[0], p, screen[2])};
             
             if((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)){
+                n = bc[0]*norms[0] + bc[1]*norms[1] + bc[2]*norms[2];
+                r = (n*(n.dot(l)*2) - l).normalized();
+                diffuse = std::max(0., n.dot(l));
+                specular = std::pow(std::max(0., r.z), 35);
+                
+                TGAColor color {255, 255, 255, 255};
+                for(int i : {0,1,2}){color[i] *= std::min(1., ambient + .4*diffuse + .9*specular);}
+            
                 uint8_t depthColor = ((bc/totalArea).dot(z))*1.275;
                 if((int)grayBuffer.get(i,j).bgra[0] <= depthColor){
                     grayBuffer.set(i, j, {depthColor, depthColor, depthColor});
                     framebuffer.set(i, j, color);
-            }
+                }
         }
         }
     }
-}
 }

@@ -36,6 +36,7 @@ Model::Model(std::string filename, int width, int height){
 
     vec<3> point;
     std::vector<int> set(3, 0);
+    std::vector<int> set1(3, 0);
     int val;
 
     while(inf >> line){
@@ -48,15 +49,26 @@ Model::Model(std::string filename, int width, int height){
             vertices.push_back(point);
         }
 
-        if(line == "f"){
+        else if(line == "vn"){
+            float coord;
+            for(int i = 0; i<3; i++){
+                inf >> coord;
+                point[i] = coord;
+            }
+            normals.push_back(point);
+        }
+
+        else if(line == "f"){
             std::string discard;
             for(int i = 0; i<3; i++){
                 inf >> val;
                 set[i] = val-1;
-                val = 0;
-                inf >> discard;
+                inf >> val;
+                inf >> val;
+                set1[i] = val;
             }
             points.push_back(set);
+            facePoints.push_back(set1);
         }
     }
     inf.close();
@@ -65,31 +77,36 @@ Model::Model(std::string filename, int width, int height){
 void Model::draw(Matrix<4,4>  persp, Matrix<4,4> modelView, Matrix<4,4> vPort, int width, int height, double ambient, vec<3> light, vec<3> viewer){
     modelBuffer = TGAImage{width, height, TGAImage::GRAYSCALE};
     TGAImage grayBuffer = TGAImage(width, height, TGAImage::GRAYSCALE);
-    Matrix<4,4> comp = persp * modelView;
 
     vec<4> temp = {light[0], light[1], light[2], 0.};
     temp = modelView*temp;
     light = {temp[0], temp[1], temp[2]};
     light = light.normalized();
 
-    int progress = 0;
-    for(auto set: points){
-        vec<3> coords[3] = {vertices[set[0]], vertices[set[1]], vertices[set[2]]};
-        TGAColor rnd;
-        vec<4> clip[3];
-        vec<3> Z{};
-        for(int i = 0; i < 3; i++){
-            clip[i] = comp * vec<4>{coords[i].x, coords[i].y, coords[i].z, 1.};
+    int size = points.size();
+
+    vec<3> coords[3];
+    vec<4> clip[3];
+    vec<3> Z{};
+    vec<3> norms[3];
+    for(int i = 0; i<points.size(); i++){
+        std::vector<int> set = points[i], set1 = facePoints[i];
+        for(int i:{0,1,2}){coords[i] = vertices[set[i]];}
+        for(int i:{0,1,2}){norms[i] = normals[set1[i]];}
+        for(int i = 0; i < 3; i++){ 
+            clip[i] = modelView * vec<4>{coords[i].x, coords[i].y, coords[i].z, 1.};
+            norms[i] = {clip[i][0], clip[i][1], clip[i][2]};
+            clip[i] = persp * clip[i];
             clip[i] = (clip[i]/clip[i][3]);
-            Z[i] = clip[i][2];
             clip[i] = vPort*clip[i];
+            Z[i] = clip[i][2];
         }
         
         vec<2> args[3];
         for(int i = 0; i< 3; ++i){
             args[i] = vec<2>{clip[i][0], clip[i][1]};
         }
-        draw::rasterize(args, Z, ambient, modelBuffer, grayBuffer, light, viewer);
+        draw::rasterize(args, Z, norms, ambient, modelBuffer, grayBuffer, light, viewer);
     }
     grayBuffer.write_tga_file("grayBuff1.tga");
 }
