@@ -18,20 +18,29 @@ constexpr vec<3> center{0,0,0};
 constexpr vec<3>     up{0,1,0};
 vec<3> viewer = (eye-center).normalized();
 
-Matrix<4,4> modelView = lookAt(center, eye, up);
-Matrix<4,4> persp = perspective((eye-center).mag());
-Matrix<4,4> vPort = viewport(width/16, height/16, width*7/8, height*7/8);
 
 int main(int argc, char** argv) {
     TGAImage framebuffer(width, height, TGAImage::RGB);
+    std::vector<double> zBuff(width*height, -INFINITY);
 
-    Model diablo{"obj/african_head/african_head.obj", width, height};
+    Model diablo({"obj/diablo3_pose/diablo3_pose.obj"}, {"obj/diablo3_pose/diablo3_pose_nm.tga"}, 
+        {"obj/diablo3_pose/diablo3_pose_nm_tangent.tga"},
+    {"obj/diablo3_pose/diablo3_pose_diffuse.tga"}, {"obj/diablo3_pose/diablo3_pose_spec.tga"});
+    
+    diablo.setViewport(width/16, height/16, width*7/8, height*7/8);
+    diablo.setPerspective((eye-center).mag());
+    diablo.setModelView(center, eye, up);
+
+    diablo.setLight({1,0.6,1});
+    diablo.setAmbient(0.08);
+
     auto start = std::chrono::steady_clock::now();
-    diablo.draw(persp, modelView, vPort, width, height, .3, {1,1,1}, viewer);
+    diablo.draw(framebuffer, zBuff);
     auto end = std::chrono::steady_clock::now();
+
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "done in " << duration.count() << "\n";
-    diablo.write("diablo90_10.tga");
+    framebuffer.write_tga_file("diablo90_10.tga");
     
     return 0;
 }

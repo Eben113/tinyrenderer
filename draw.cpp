@@ -150,44 +150,76 @@ void wireframe(int x0, int y0, int x1, int y1, int x2, int y2, TGAImage &framebu
     }
 }
 
-void rasterize(const vec<2> screen[3], vec<3> z, vec<3> norms[3], double ambient, TGAImage &framebuffer, TGAImage& grayBuffer, vec<3> l, vec<3> viewer){
+void rasterize(const vec<2> screen[3], vec<3> z, vec<3> uvs[3], double ambient, Matrix<4,4>& modelView, vec<3> l, Matrix<3,3> TBN, vec<3> normals[3],TGAImage &framebuffer, TGAImage &tang_nmBuffer, std::vector<double>& zBuffer, TGAImage& diffBuffer, TGAImage& specBuffer){
     int totalArea = triangleArea(screen[0], screen[1], screen[2]);
-    int orientation = (totalArea < 0)? -1: 1;
-    int absArea = orientation*totalArea;
     if(totalArea <= 0){
         return;}
+    int orientation = (totalArea <= 0)? -1: 1;
+    int absArea = orientation*totalArea;
+    
     Matrix<3,3> ABC {};
-
-    vec<3> n, r;
-    double diffuse, specular;
-
     for(int i = 0; i< 3; ++i){
         ABC[i] = vec<3>{screen[i][0], screen[i][1], 1};
     }
     ABC = ABC.transposeInverse();
+
+    vec<3> uv, r, n;
+    TGAColor tempColor;
+    vec<4> temp;
+    vec<3> diffuse, specular;
+    double cD, cS;
+
     int maxX = std::max(std::max(screen[0][0], screen[1][0]), screen[2][0]), minX = std::min(std::min(screen[0][0], screen[1][0]), screen[2][0]);
     int maxY = std::max(std::max(screen[0][1], screen[1][1]), screen[2][1]), minY = std::min(std::min(screen[0][1], screen[1][1]), screen[2][1]);
+    
+    int nmH = tang_nmBuffer.height(), nmW = tang_nmBuffer.width();
     #pragma op parallel for
     for(int i = minX; i<=maxX; i++){ 
         for(int j = minY; j<=maxY; j++){
             vec<2> p {(double)i, (double)j};
-            vec<3> bc = {triangleArea(screen[0], screen[1], p), triangleArea(p, screen[1], screen[2]),
-            triangleArea(screen[0], p, screen[2])};
-            bc = (bc/totalArea);
+            // vec<3> bc = {triangleArea(screen[0], screen[1], p), triangleArea(p, screen[1], screen[2]),
+            // triangleArea(screen[0], p, screen[2])};
+            // bc = (bc/totalArea);
+
+            vec<3> bc = ABC* vec<3>{(double)i, (double)j, 1.0};
             
             if((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)){
-                n = (bc[0]*norms[0] + bc[1]*norms[1] + bc[2]*norms[2]).normalized();
-                //std::cout << n;
-                r = (n*(n.dot(l)*2) - l).normalized();
-                diffuse = std::max(0., n.dot(l));
-                specular = std::pow(std::max(0., r.z), 35);
+
+                //compute normal vector at pixel using barycentric coordinates and uv coords at vertices
+                uv = (bc[0]*uvs[0] + bc[1]*uvs[1] + bc[2]*uvs[2]);
+
+                TBN[0] = (bc[0]*normals[0] + bc[1]*normals[1] + bc[2]*normals[2]).normalized();
+                TBN = TBN.T();
                 
+                tempColor = tang_nmBuffer.get(uv[0]*nmW, (1-uv[1])*nmH);
+                n = {(tempColor[2]/127.5)-1, (tempColor[1]/127.5)-1, (tempColor[0]/127.5)-1};
+                n = TBN*n;
+                temp = modelView*vec<4>{n[0], n[1], n[2], 0.};
+                n = {temp[0], temp[1], temp[2]};
+                n = n.normalized();
+
+                //lighting(phong's reflection model) calculations
+                r = (n*(n.dot(l)*2) - l).normalized();
+                cD = std::max(0., n.dot(l));
+                cS = std::pow(std::max(0., r.z), 40);
+                // diffuse = std::max(0., n.dot(l));
+                // specular = std::pow(std::max(0., r.z), 35);
+
+                tempColor = diffBuffer.get(uv[0]*nmW, (1-uv[1])*nmH);
+                diffuse = {tempColor[0], tempColor[1], tempColor[2]};
+                //diffuse = (diffuse*2.)/255.0 - vec<3>{1,1,1};
+
+                tempColor = specBuffer.get(uv[0]*nmW, (1-uv[1])*nmH);
+                cS *= tempColor[0]/255.0;
+                //specular = (specular*2.)/255.0  - vec<3>{1,1,1};
+
                 TGAColor color {255, 255, 255, 255};
-                for(int i : {0,1,2}){color[i] *= std::min(1., ambient + .4*diffuse + .9*specular);}
+                //color[i]*ambient + 0.4*diffuse[i]*cD + 0.9*specular[i]*cS;
+                for(int i : {0,1,2}){color[i] = color[i]*ambient + cD*diffuse[i] + cS*255.0;}
             
-                uint8_t depthColor = ((bc/totalArea).dot(z))*1.275;
-                if((int)grayBuffer.get(i,j).bgra[0] <= depthColor){
-                    grayBuffer.set(i, j, {depthColor, depthColor, depthColor});
+                double depthColor = ((bc).dot(z));
+                if(zBuffer[i + j*framebuffer.width()] < depthColor){
+                    zBuffer[i + j*framebuffer.width()] = depthColor;
                     framebuffer.set(i, j, color);
                 }
         }

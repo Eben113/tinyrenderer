@@ -231,6 +231,7 @@ template<int n, int m> vec<n> operator*(Matrix<n,m> lhs, vec<m>rhs){
     return result;
 };
 
+
 template<int dim> struct dt{
     static double det(const Matrix<dim, dim>&  mat){
         double result{};
